@@ -1,0 +1,151 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String
+  name          String?
+  role          UserRole  @default(OWNER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  team          Team?
+
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  OWNER
+}
+
+model Team {
+  id            String    @id @default(uuid())
+  name          String
+  ownerId       String    @unique
+  owner         User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  teamRoster    TeamRoster[]
+  tournamentLineups TournamentLineup[]
+  teamPoints    TeamPoints[]
+
+  @@map("teams")
+}
+
+model Golfer {
+  id            String    @id @default(uuid())
+  name          String
+  pgaId         String?   @unique
+  active        Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  teamRoster    TeamRoster[]
+  tournamentLineups TournamentLineup[]
+  golferResults GolferResult[]
+
+  @@map("golfers")
+}
+
+model TeamRoster {
+  id            String    @id @default(uuid())
+  teamId        String
+  golferId      String
+  team          Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  golfer        Golfer    @relation(fields: [golferId], references: [id], onDelete: Cascade)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([teamId, golferId])
+  @@map("team_rosters")
+}
+
+model Tournament {
+  id            String    @id @default(uuid())
+  name          String
+  startDate     DateTime
+  endDate       DateTime
+  isMajor       Boolean   @default(false)
+  isWGC         Boolean   @default(false)
+  isMatchPlay   Boolean   @default(false)
+  isActive      Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  tournamentLineups TournamentLineup[]
+  golferResults GolferResult[]
+  teamPoints    TeamPoints[]
+  tournamentSkins TournamentSkins[]
+
+  @@map("tournaments")
+}
+
+model TournamentLineup {
+  id            String    @id @default(uuid())
+  teamId        String
+  tournamentId  String
+  golferId      String
+  team          Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  tournament    Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  golfer        Golfer    @relation(fields: [golferId], references: [id], onDelete: Cascade)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([teamId, tournamentId, golferId])
+  @@map("tournament_lineups")
+}
+
+model GolferResult {
+  id            String    @id @default(uuid())
+  tournamentId  String
+  golferId      String
+  place         Int?
+  score         Int?
+  madeCut       Boolean   @default(true)
+  isTied        Boolean   @default(false)
+  matchPlayWins Int?      @default(0)
+  tournamentPoints Int?   @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  tournament    Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  golfer        Golfer    @relation(fields: [golferId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, golferId])
+  @@map("golfer_results")
+}
+
+model TeamPoints {
+  id            String    @id @default(uuid())
+  teamId        String
+  tournamentId  String
+  points        Int      @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  team          Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  tournament    Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, tournamentId])
+  @@map("team_points")
+}
+
+model TournamentSkins {
+  id            String    @id @default(uuid())
+  tournamentId  String
+  winningTeamId String?
+  skinValue     Int      @default(0)
+  carryOver     Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  tournament    Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@map("tournament_skins")
+}
