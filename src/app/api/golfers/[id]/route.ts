@@ -2,8 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 
+type Context = { params: { id: string } };
+
 // GET /api/golfers/[id] - Get a specific golfer
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(
+  request: NextRequest,
+  context: Context
+) {
   try {
     const session = await auth();
     
@@ -16,7 +21,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     }
     
     const golfer = await prisma.golfer.findUnique({
-      where: { id: params.id },
+      where: { id: context.params.id },
       include: {
         teamRoster: {
           include: {
@@ -54,7 +59,10 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 }
 
 // PATCH /api/golfers/[id] - Update a golfer (admin only)
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(
+  request: NextRequest,
+  context: { params: { id: string } }
+) {
   try {
     const session = await auth();
     
@@ -79,7 +87,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
     // Verify golfer exists
     const existingGolfer = await prisma.golfer.findUnique({
-      where: { id: params.id }
+      where: { id: context.params.id }
     });
 
     if (!existingGolfer) {
@@ -105,7 +113,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
     // Update golfer
     const golfer = await prisma.golfer.update({
-      where: { id: params.id },
+      where: { id: context.params.id },
       data: {
         name: name ?? undefined,
         pgaId: pgaId ?? undefined,
@@ -124,7 +132,10 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 }
 
 // DELETE /api/golfers/[id] - Delete a golfer (admin only)
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  context: { params: { id: string } }
+) {
   try {
     const session = await auth();
     
@@ -146,7 +157,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 
     // Verify golfer exists
     const existingGolfer = await prisma.golfer.findUnique({
-      where: { id: params.id }
+      where: { id: context.params.id }
     });
 
     if (!existingGolfer) {
@@ -159,10 +170,10 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     // Check if golfer is in any rosters or tournament lineups
     const [teamRoster, tournamentLineup] = await Promise.all([
       prisma.teamRoster.findFirst({
-        where: { golferId: params.id }
+        where: { golferId: context.params.id }
       }),
       prisma.tournamentLineup.findFirst({
-        where: { golferId: params.id }
+        where: { golferId: context.params.id }
       })
     ]);
 
@@ -175,7 +186,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 
     // Delete golfer
     await prisma.golfer.delete({
-      where: { id: params.id }
+      where: { id: context.params.id }
     });
     
     return NextResponse.json(

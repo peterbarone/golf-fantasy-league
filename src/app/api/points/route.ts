@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { auth } from '@/lib/auth';
+import prisma from '@/lib/prisma';
 import { calculateTournamentPoints } from '@/lib/pointsCalculator';
-
-const prisma = new PrismaClient();
 
 // GET /api/points - Get points for all teams in a tournament
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     
     // Check authentication
     if (!session) {
@@ -65,7 +62,7 @@ export async function GET(request: NextRequest) {
 // POST /api/points/calculate - Calculate points for a tournament (admin only)
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     
     // Check authentication
     if (!session) {

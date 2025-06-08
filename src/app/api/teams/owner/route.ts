@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-
-const prisma = new PrismaClient();
+import { auth } from '@/lib/auth';
+import prisma from '@/lib/prisma';
 
 // GET /api/teams/owner - Get the team of the currently logged-in owner
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     
     // Check authentication
     if (!session) {

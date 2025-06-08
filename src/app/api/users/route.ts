@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { auth } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 
 // GET /api/users - Get all users or filter by role (admin only)
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     
     // Check authentication
     if (!session) {
@@ -63,7 +62,7 @@ export async function GET(request: NextRequest) {
 // POST /api/users - Create a new user (admin only)
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     
     // Check authentication
     if (!session) {

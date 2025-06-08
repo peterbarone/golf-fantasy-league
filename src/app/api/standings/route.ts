@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-
-const prisma = new PrismaClient();
+import { auth } from '@/lib/auth';
+import prisma from '@/lib/prisma';
 
 // GET /api/standings - Get overall league standings
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     
     // Check authentication
     if (!session) {
@@ -37,10 +34,22 @@ export async function GET(request: NextRequest) {
     });
     
     // Calculate the total points and skins for each team across all tournaments
-    const standings = teams.map(team => {
+    type TeamWithPoints = {
+      id: string;
+      name: string;
+      owner: { name: string | null; email: string };
+      teamPoints: Array<{
+        points: number;
+        skinCount: number;
+        tournamentId: string;
+        tournament: { name: string; startDate: Date };
+      }>;
+    };
+
+    const standings = teams.map((team: TeamWithPoints) => {
       // Sum up all points and skins across tournaments
-      const totalPoints = team.teamPoints.reduce((sum, tp) => sum + tp.points, 0);
-      const totalSkins = team.teamPoints.reduce((sum, tp) => sum + tp.skinCount, 0);
+      const totalPoints = team.teamPoints.reduce((sum: number, tp) => sum + tp.points, 0);
+      const totalSkins = team.teamPoints.reduce((sum: number, tp) => sum + tp.skinCount, 0);
       
       // Count tournaments where team participated
       const tournamentCount = team.teamPoints.length;
@@ -70,7 +79,7 @@ export async function GET(request: NextRequest) {
     });
     
     // Sort standings by total points (descending)
-    const sortedStandings = standings.sort((a, b) => b.totalPoints - a.totalPoints);
+    const sortedStandings = standings.sort((a: { totalPoints: number }, b: { totalPoints: number }) => b.totalPoints - a.totalPoints);
     
     return NextResponse.json(sortedStandings);
   } catch (error) {

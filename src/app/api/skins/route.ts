@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-
-const prisma = new PrismaClient();
+import { auth } from '@/lib/auth';
+import prisma from '@/lib/prisma';
 
 // GET /api/skins - Get skins information for tournaments
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     
     // Check authentication
     if (!session) {
@@ -41,8 +38,20 @@ export async function GET(request: NextRequest) {
     });
     
     // For each tournament, get skin winners if any
+    type TournamentSkin = {
+      id: string;
+      tournamentId: string;
+      skinValue: number;
+      carryOver: boolean;
+      tournament: {
+        id: string;
+        name: string;
+        startDate: Date;
+      };
+    };
+
     const skinsWithWinners = await Promise.all(
-      skins.map(async (skin) => {
+      skins.map(async (skin: TournamentSkin) => {
         // Get golfer results with skins for this tournament
         const skinWinners = await prisma.golferResult.findMany({
           where: {
@@ -65,7 +74,7 @@ export async function GET(request: NextRequest) {
                           skinCount: { gt: 0 },
                         },
                         select: { golferId: true },
-                      })).map(r => r.golferId),
+                      })).map((r: { golferId: string }) => r.golferId),
                     },
                   },
                   include: {
@@ -98,7 +107,7 @@ export async function GET(request: NextRequest) {
 // POST /api/skins - Update skins information for a tournament (admin only)
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     
     // Check authentication
     if (!session) {
